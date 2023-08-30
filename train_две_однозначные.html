@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Тренировка устного счета</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            text-align: center;
+            margin-top: 50px;
+        }
+        .question {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        .input-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #answer {
+            width: 60px;
+            font-size: 18px;
+            padding: 5px;
+        }
+        .message {
+            font-size: 18px;
+            margin-top: 5px;
+        }
+        #countdown {
+            font-size: 20px;
+            margin-top: 10px;
+        }
+        #timeRemaining {
+            font-size: 18px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="question">Тренировка устного счета</div>
+    <div>
+        <label>Выберите арифметические действия:</label>
+        <input type="checkbox" id="addition" checked>+
+        <input type="checkbox" id="subtraction" checked>-
+        <input type="checkbox" id="multiplication" checked>*
+        <input type="checkbox" id="division" checked>/
+    </div>
+    <div>
+        <label>Выберите режим переменных:</label>
+        <select id="variableMode">
+            <option value="12">1-значная + 2-значная</option>
+            <option value="22">Две 2-значные</option>
+            <option value="11">Две однозначные</option>
+        </select>
+    </div>
+    <div>
+        <label>Выберите время одного примера (сек.):</label>
+        <select id="exampleTime">
+            <option value="10">10</option>
+        </select>
+    </div>
+    <div>
+        <label>Выберите время тренировки (мин.):</label>
+        <select id="trainingTime">
+            <option value="1">1</option>
+            <option value="3">3</option>
+            <option value="5">5</option>
+        </select>
+    </div>
+    <button id="startButton">Начать тренировку</button>
+    <div id="timeRemaining"></div>
+    <div id="countdown"></div>
+    <div class="input-container">
+        <input type="number" id="answer" placeholder="Ответ">
+    </div>
+    <div class="message" id="message"></div>
+</div>
+<script>
+    var exampleTime = parseInt(document.getElementById('exampleTime').value); // Время одного примера (секунды)
+    var totalTrainingTime = parseInt(document.getElementById('trainingTime').value) * 60; // Общее время тренировки (секунды)
+    var operationType = [];
+    var startTime;
+    var timerInterval;
+    var currentQuestion;
+    var correctAnswer;
+    var userInput;
+    var countdownElement = document.getElementById('countdown');
+    var timeRemainingElement = document.getElementById('timeRemaining');
+    var messageElement = document.getElementById('message');
+    var answerInput = document.getElementById('answer');
+    var startButton = document.getElementById('startButton');
+    var variableMode = document.getElementById('variableMode');
+    var additionCheckbox = document.getElementById('addition');
+    var subtractionCheckbox = document.getElementById('subtraction');
+    var multiplicationCheckbox = document.getElementById('multiplication');
+    var divisionCheckbox = document.getElementById('division');
+    var exampleTimeSelect = document.getElementById('exampleTime');
+    var trainingTimeSelect = document.getElementById('trainingTime');
+    var currentExampleTime = exampleTime;
+    var currentTotalTime = totalTrainingTime;
+    var totalExamples = 0;
+    var correctExamples = 0;
+
+    function getRandomNumber(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function generateQuestion() {
+        operationType = [];
+        if (additionCheckbox.checked) operationType.push('+');
+        if (subtractionCheckbox.checked) operationType.push('-');
+        if (multiplicationCheckbox.checked) operationType.push('*');
+        if (divisionCheckbox.checked) operationType.push('/');
+
+        var operation = operationType[getRandomNumber(0, operationType.length - 1)];
+        var number1, number2;
+
+        if (variableMode.value === '12') {
+            number1 = getRandomNumber(1, 9);
+            number2 = getRandomNumber(10, 99);
+        } else if (variableMode.value === '22') {
+            number1 = getRandomNumber(10, 99);
+            number2 = getRandomNumber(10, 99);
+        } else if (variableMode.value === '11') {
+            number1 = getRandomNumber(1, 9);
+            number2 = getRandomNumber(1, 9);
+        }
+
+        if (operation === '+') {
+            correctAnswer = number1 + number2;
+        } else if (operation === '-') {
+            correctAnswer = number1 - number2;
+        } else if (operation === '*') {
+            correctAnswer = number1 * number2;
+        } else if (operation === '/') {
+            correctAnswer = number1 / number2;
+        }
+
+        currentQuestion = number1 + ' ' + operation + ' ' + number2;
+        document.querySelector('.question').textContent = currentQuestion;
+        answerInput.value = '';
+        userInput = null;
+        messageElement.textContent = '';
+        answerInput.disabled = false;
+        answerInput.focus();
+        countdownElement.textContent = 'Осталось времени: ' + currentExampleTime + ' сек.';
+        timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    function updateTimer() {
+        currentExampleTime--;
+        currentTotalTime--;
+        countdownElement.textContent = 'Осталось времени: ' + currentExampleTime + ' сек.';
+        timeRemainingElement.textContent = 'Время до конца тренировки: ' + formatTime(currentTotalTime);
+        if (currentExampleTime < 0) {
+            clearInterval(timerInterval);
+            messageElement.textContent = 'Время истекло. Следующий пример:';
+            messageElement.style.color = 'red';
+            setTimeout(function() {
+                totalExamples++;
+                generateQuestion();
+                currentExampleTime = exampleTime;
+            }, 500);
+        }
+
+        if (currentTotalTime < 0) {
+            showResults();
+        }
+
+    }
+
+    function formatTime(seconds) {
+        var minutes = Math.floor(seconds / 60);
+        var remainingSeconds = seconds % 60;
+        return minutes + ' мин. ' + remainingSeconds + ' сек.';
+    }
+
+    function checkAnswer() {
+        if (userInput === correctAnswer) {
+            clearInterval(timerInterval);
+            messageElement.textContent = 'Правильно!';
+            messageElement.style.color = 'green';
+            var audio = new Audio('success.mp3');
+            audio.play();
+            answerInput.disabled = true;
+            setTimeout(function() {
+                correctExamples++;
+                totalExamples++;
+                if (currentTotalTime > 0) {
+                generateQuestion();
+                currentExampleTime = exampleTime;
+                } else {
+                    showResults();
+                }
+            }, 1000);
+        } else {
+            messageElement.textContent = 'Неправильно. Попробуйте еще раз.';
+            messageElement.style.color = 'red';
+            var audio = new Audio('error.mp3');
+            audio.play();
+            answerInput.value = '';
+            answerInput.focus();
+        }
+    }
+
+    function showResults() {
+        clearInterval(timerInterval);
+
+        countdownElement.textContent = 'Тренировка завершена!';
+        messageElement.textContent = 'Примеров задано: ' + totalExamples + '. Правильно решено: ' + correctExamples + '.';
+        answerInput.disabled = true;
+        startButton.disabled = false;
+        variableMode.disabled = false;
+        additionCheckbox.disabled = false;
+        subtractionCheckbox.disabled = false;
+        multiplicationCheckbox.disabled = false;
+        divisionCheckbox.disabled = false;
+        exampleTimeSelect.disabled = false;
+        trainingTimeSelect.disabled = false;
+    }
+
+    startButton.addEventListener('click', function() {
+        currentTotalTime = parseInt(document.getElementById('trainingTime').value) * 60; // Общее время тренировки (секунды)
+        startButton.disabled = true;
+        variableMode.disabled = true;
+        additionCheckbox.disabled = true;
+        subtractionCheckbox.disabled = true;
+        multiplicationCheckbox.disabled = true;
+        divisionCheckbox.disabled = true;
+        exampleTimeSelect.disabled = true;
+        trainingTimeSelect.disabled = true;
+        generateQuestion();
+        startTime = new Date().getTime() / 1000;
+    });
+
+    answerInput.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            userInput = parseFloat(answerInput.value);
+            checkAnswer();
+        }
+    });
+</script>
+</body>
+</html>
